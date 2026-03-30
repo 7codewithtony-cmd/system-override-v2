@@ -5,75 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SYSTEM OVERRIDE v2.0</title>
     <style>
-        /* Matrix Rain Background */
         canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; }
-        
         body { background: #000; color: #00ff00; font-family: 'Courier New', monospace; text-align: center; margin: 0; padding: 10px; overflow-x: hidden; }
+        .logo { font-size: 1.8em; font-weight: bold; color: #00ff00; text-shadow: 0 0 15px #00ff00; margin: 15px 0; }
+        .panel { border: 2px solid #00ff00; padding: 20px; display: inline-block; border-radius: 12px; background-color: rgba(0,0,0,0.85); width: 95%; max-width: 460px; box-shadow: 0 0 20px #00ff00; }
+        .tg-link { display: block; width: 90%; margin: 0 auto 15px; padding: 12px; background: #0088cc; color: #fff; text-decoration: none; font-weight: bold; border-radius: 5px; box-shadow: 0 0 10px #0088cc; }
         
-        .logo { font-size: 2em; font-weight: bold; color: #00ff00; text-shadow: 0 0 15px #00ff00; margin: 20px 0; }
-        
-        .panel { border: 2px solid #00ff00; padding: 20px; display: inline-block; border-radius: 12px; background-color: rgba(0,0,0,0.85); width: 95%; max-width: 480px; box-shadow: 0 0 20px #00ff00; }
-        
-        /* Stats Box (Original Style) */
-        .stats-box { border: 1px solid #00ff00; padding: 10px; margin-bottom: 15px; font-size: 1.2em; border-radius: 8px; }
-        
-        input { background: transparent; border: 1px solid #00ff00; color: #fff; padding: 12px; margin: 8px 0; border-radius: 6px; width: 90%; font-size: 1em; outline: none; }
-        input::placeholder { color: rgba(0,255,0,0.5); }
-        
-        .btn { display: block; width: 95%; padding: 14px; margin: 12px auto; border: 1px solid #00ff00; background: transparent; color: #00ff00; cursor: pointer; border-radius: 6px; font-size: 1.1em; font-weight: bold; transition: 0.3s; }
-        .btn:hover { background: #00ff00; color: #000; box-shadow: 0 0 15px #00ff00; }
-        
-        .stop-btn { border-color: #ff0000; color: #ff0000; margin-top: 20px; }
-        .stop-btn:hover { background: #ff0000; color: #fff; box-shadow: 0 0 15px #ff0000; }
+        /* Two Box Stats Section */
+        .stats-container { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
+        .stat-card { flex: 1; padding: 15px; border-radius: 8px; border: 1px solid; font-size: 1.2em; font-weight: bold; background: rgba(0,0,0,0.6); }
+        .hit-box { border-color: #00ff00; color: #00ff00; box-shadow: inset 0 0 10px rgba(0,255,0,0.2); }
+        .fail-box { border-color: #ff4444; color: #ff4444; box-shadow: inset 0 0 10px rgba(255,68,68,0.2); }
+        .label { font-size: 0.7em; display: block; margin-bottom: 5px; opacity: 0.7; letter-spacing: 1px; }
 
-        /* Blinking Active Status */
-        .status-active { margin-top: 10px; font-weight: bold; font-size: 1.1em; display: none; color: #00ff00; text-transform: uppercase; animation: blinker 0.8s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0; text-shadow: 0 0 20px #00ff00; } }
+        /* Status Blinker */
+        .status-active { margin: 10px 0; font-weight: bold; display: none; color: #00ff00; animation: blinker 0.8s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; text-shadow: 0 0 15px #00ff00; } }
 
-        /* Mobile Responsive */
-        @media (max-width: 600px) {
-            .logo { font-size: 1.5em; }
-            .panel { width: 98%; padding: 15px; }
-            .btn { font-size: 1em; padding: 12px; }
-        }
+        /* Clean Inputs */
+        input { background: transparent; border: 1px solid #00ff00; color: #fff; padding: 12px; margin: 8px 0; border-radius: 6px; width: 90%; outline: none; font-size: 1em; text-align: center; }
+        input::placeholder { color: rgba(0,255,0,0.3); }
+
+        .btn { display: block; width: 95%; padding: 12px; margin: 10px auto; border: 1px solid #00ff00; background: transparent; color: #00ff00; cursor: pointer; border-radius: 6px; font-weight: bold; }
+        .btn:hover { background: #00ff00; color: #000; }
+        .combo-btn { border-color: #ff00ff; color: #ff00ff; }
+        .combo-btn:hover { background: #ff00ff; color: #000; box-shadow: 0 0 15px #ff00ff; }
+        .stop-btn { border-color: #ff0000; color: #ff0000; margin-top: 15px; }
+
+        @media (max-width: 600px) { .panel { width: 98%; } }
     </style>
 </head>
 <body>
     <canvas id="matrix"></canvas>
-    
     <div class="logo">SYSTEM OVERRIDE v2.0</div>
-    
     <div class="panel">
-        <div class="stats-box">
-            Hits: <span id="hits">0</span> | Bad: <span id="bad">0</span>
-        </div>
+        <a href="https://t.me/your_channel" target="_blank" class="tg-link">JOIN TELEGRAM CHANNEL</a>
         
+        <div class="stats-container">
+            <div class="stat-card hit-box">
+                <span class="label">SUCCESS HITS</span>
+                <span id="hits">0</span>
+            </div>
+            <div class="stat-card fail-box">
+                <span class="label">FAIL (BAD)</span>
+                <span id="bad">0</span>
+            </div>
+        </div>
+
         <div class="status-active" id="status_msg">⚡ EXPLOIT IS ACTIVE ⚡</div>
         
-        <input type="text" id="tg_id" placeholder="Enter ID (7404780411)">
-        <input type="text" id="tg_token" placeholder="Enter Token (835767...)">
+        <input type="text" id="tg_id" placeholder="Enter Telegram ID">
+        <input type="text" id="tg_token" placeholder="Enter Bot Token">
         
-        <hr style="border: 0.5px solid #333; margin: 20px 0;">
-        
+        <div style="color: #ff00ff; font-size: 0.8em; margin: 10px 0;">-- ADVANCED COMBO --</div>
+        <button class="btn combo-btn" onclick="start('legacy')">🚀 PETER LEGACY (2k12-14)</button>
+        <button class="btn combo-btn" onclick="start('meta')">💎 PETER META/BIZZ</button>
+        <button class="btn combo-btn" onclick="start('toxic')">💀 PETER TOXIC ACTIVE</button>
+        <button class="btn combo-btn" onclick="start('deep')">🌌 PETER DEEP PERMA</button>
+
+        <div style="color: #00ff00; font-size: 0.8em; margin: 10px 0;">-- SINGLE FILES --</div>
         <button class="btn" onclick="start('btn1')">high followers 😍 by peter (2).py</button>
         <button class="btn" onclick="start('btn3')">high followers file by team tx.py</button>
-        <button class="btn" onclick="start('btn2')">2k14 to 2k15 file.py</button>
-        <button class="btn" onclick="start('btn4')">5L by Peter .py</button>
-        <button class="btn" onclick="start('btn5')">2k13 to 2k15 by peter.py.py</button>
         
         <button class="btn stop-btn" onclick="stopAll()">TERMINATE ALL EXPLOITS</button>
     </div>
 
     <script>
-        // --- MATRIX RAIN ANIMATION ---
         const canvas = document.getElementById('matrix');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%@#&".split("");
+        const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
         const fontSize = 16; const columns = canvas.width / fontSize;
         const rain = Array(Math.floor(columns)).fill(1);
-
-        function drawMatrix() {
+        function draw() {
             ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#0F0"; ctx.font = fontSize + "px Courier New";
             for (let i = 0; i < rain.length; i++) {
@@ -83,41 +87,33 @@
                 rain[i]++;
             }
         }
-        setInterval(drawMatrix, 35);
+        setInterval(draw, 35);
 
-        // --- DASHBOARD LOGIC ---
-        function start(scriptName) {
+        function start(script) {
             const id = document.getElementById('tg_id').value;
             const token = document.getElementById('tg_token').value;
-            if(!id || !token) { alert("Bhai ID aur Token toh daal de!"); return; }
-
+            if(!id || !token) { alert("ID aur Token empty hai!"); return; }
             fetch('/start', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({script: scriptName, id: id, token: token})
-            }).then(r => r.json()).then(data => {
+                body: JSON.stringify({script: script, id: id, token: token})
+            }).then(r => r.json()).then(d => {
                 document.getElementById('status_msg').style.display = 'block';
-                alert(data.message);
             });
         }
 
         function stopAll() {
-            fetch('/stop', {method: 'POST'}).then(r => r.json()).then(data => {
+            fetch('/stop', {method: 'POST'}).then(r => r.json()).then(d => {
                 document.getElementById('status_msg').style.display = 'none';
-                alert(data.message);
             });
         }
 
-        // Live Stats Update
         setInterval(() => {
             fetch('/get_stats').then(r => r.json()).then(data => {
                 document.getElementById('hits').innerText = data.hits;
                 document.getElementById('bad').innerText = data.bad;
-                if(data.active_script !== "None") {
-                    document.getElementById('status_msg').style.display = 'block';
-                } else {
-                    document.getElementById('status_msg').style.display = 'none';
-                }
+                if(data.active_script !== "None") document.getElementById('status_msg').style.display = 'block';
+                else document.getElementById('status_msg').style.display = 'none';
             });
         }, 2000);
     </script>
