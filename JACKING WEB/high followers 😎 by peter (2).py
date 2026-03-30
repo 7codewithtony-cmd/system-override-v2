@@ -20,13 +20,13 @@ init(autoreset=True)
 # ================= FIXED DASHBOARD SYNC LOGIC =================
 def send_to_dashboard(stat_type):
     try:
-        # Render Live URL for syncing stats
+        # Render Live URL - Localhost Render par block hota hai
         url = 'https://system-override-v2.onrender.com/update_stats'
         requests.post(url, json={'type': stat_type}, timeout=3)
     except:
         pass
 
-# ID/Token setup (Dashboard passes these as arguments)
+# Dashboard automatically ID aur Token bhejta hai
 if len(sys.argv) > 2:
     ID = sys.argv[1]
     TOKEN = sys.argv[2]
@@ -76,7 +76,6 @@ def JodScript():
             with open(TOKEN_FILE, 'w') as f: f.write(f"{tok}//{host}")
             print(C1 + "[*] Google Token Generated Successfully.")
         else:
-            print(E + "[!] Token generation failed, retrying...")
             time.sleep(3)
             JodScript()
     except Exception as e:
@@ -91,7 +90,9 @@ def check_gmail(email_prefix):
     global hits_count, bad_count
     try:
         if not os.path.exists(TOKEN_FILE): JodScript()
-        with open(TOKEN_FILE, 'r') as f: tl, host = f.read().split('//')
+        with open(TOKEN_FILE, 'r') as f: 
+            data_file = f.read().split('//')
+            tl, host = data_file[0], data_file[1]
         headers = {'google-accounts-xsrf': '1', 'User-Agent': generate_user_agent()}
         data = f"f.req=%5B%22TL%3A{tl}%22%2C%22{email_prefix}%22%2C0%2C0%2C1%2Cnull%2C0%2C5167%5D"
         res = requests.post("https://accounts.google.com/_/signup/usernameavailability", headers=headers, data=data, cookies={'__Host-GAPS': host})
@@ -140,7 +141,7 @@ def send_hit_telegram(email):
 def worker():
     while True:
         lsd = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
-        # Randomizing ID range for fresh results
+        # Fresh ID range for better hitting results
         data = {
             'lsd': lsd,
             'variables': json.dumps({'id': random.randrange(2500000000, 21254029834), 'render_surface': 'PROFILE'}),
@@ -150,7 +151,7 @@ def worker():
             res = requests.post('https://www.instagram.com/api/graphql', headers={'X-FB-LSD': lsd}, data=data)
             user_data = res.json().get('data', {}).get('user', {})
             username = user_data.get('username')
-            # Media count filter to find active accounts
+            # Filter: Media count > 0 ensures account is active/real
             if username and user_data.get('media_count', 0) > 0:
                 infoinsta[username] = user_data
                 check_instagram_link(username + jod_domain)
