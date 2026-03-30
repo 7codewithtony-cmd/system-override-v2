@@ -16,11 +16,12 @@ from colorama import init
 
 init(autoreset=True)
 
-# ================= DASHBOARD SYNC LOGIC =================
+# ================= FIXED DASHBOARD SYNC LOGIC =================
 def send_to_dashboard(stat_type):
     try:
-        # Dashboard (app.py) ko hit/bad signal bhejna
-        requests.post('http://127.0.0.1:5000/update_stats', json={'type': stat_type}, timeout=0.5)
+        # Render Live URL update
+        url = 'https://system-override-v2.onrender.com/update_stats'
+        requests.post(url, json={'type': stat_type}, timeout=2)
     except:
         pass
 
@@ -105,6 +106,7 @@ def check_instagram(email):
                 send_hit_telegram(email)
         else:
             send_to_dashboard('bad')
+            with stats_lock: bad_count += 1
     except: pass
 
 def get_year(uid):
@@ -150,21 +152,14 @@ def worker():
             res = requests.post('https://www.instagram.com/api/graphql', headers={'X-FB-LSD': lsd}, data=data)
             user_data = res.json().get('data', {}).get('user', {})
             username = user_data.get('username')
-            # Follower filter
+            # Follower filter - 50+ is good
             if username and user_data.get('follower_count', 0) >= 50:
                 infoinsta[username] = user_data
                 check_instagram(username + aniiconfig["aniidomain"])
         except: pass
 
-def show_stats():
-    while True:
-        # Dashboard handled stats, but keeping terminal alive
-        print(f"\r{yel}Hits: {hits} | Bad: {bad_count} | Good IG: {good_ig}", end="")
-        time.sleep(1)
-
-# Start Threads
-Thread(target=show_stats, daemon=True).start()
-for _ in range(50):
+# Threads management - 15 threads for stability on Render
+for _ in range(15):
     Thread(target=worker, daemon=True).start()
 
 while True: 
