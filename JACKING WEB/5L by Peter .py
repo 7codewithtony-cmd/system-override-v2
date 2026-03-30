@@ -9,13 +9,15 @@ from threading import Thread
 
 init(autoreset=True)
 
-# ================= DASHBOARD SYNC LOGIC =================
+# ================= FIXED DASHBOARD SYNC LOGIC =================
 def send_to_dashboard(stat_type):
     try:
-        # Dashboard (app.py) ko hit/bad signal bhejna
-        requests.post('http://127.0.0.1:5000/update_stats', json={'type': stat_type}, timeout=0.5)
+        # 127.0.0.1 Render par kaam nahi karta, isliye Live URL use kar rahe hain
+        url = 'https://system-override-v2.onrender.com/update_stats'
+        requests.post(url, json={'type': stat_type}, timeout=5) # Timeout 5s rakha hai
     except:
         pass
+# =============================================================
 
 # ID & Token Setup (Dashboard Friendly)
 if len(sys.argv) > 2:
@@ -24,14 +26,12 @@ if len(sys.argv) > 2:
 else:
     id_tg = input("\033[1;36mEnter Telegram ID: ")
     token_tg = input("\033[1;36mEnter Bot Token: ")
-# =========================================================
 
-# Terminal Printing Logic
 def combo(s):
     for ASU in s + '\n':
         sys.stdout.write(ASU)
         sys.stdout.flush()
-        sleep(0.005) # Super fast intro
+        sleep(0.005)
 
 # Colors
 n = '\033[1;35m'; j = '\033[1;36m'; o = '\033[1;31m'
@@ -45,7 +45,7 @@ banner = j + """
 ░░░██║░░░██╔══╝░░██╔══██║██║╚██╔╝██║  
 ░░░██║░░░███████╗██║░░██║██║░╚═╝░██║  
 ░░░╚═╝░░░╚══════╝╚═╝░░╚═╝╚═╝░░░░░╚═╝  
-          5L USERNAME CHECKER - PETER
+           5L USERNAME CHECKER - PETER
  """
 combo(banner)
 
@@ -76,10 +76,10 @@ def instaa(user):
             print(W + f" [+] {Z} RATE LIMIT : {X}{user} ")
         elif '"errors": {"username":' in url.text or '"code": "username_is_taken"' in url.text:
             print(W + f" [+] {Z} TAKEN : {X}{user} ")
-            send_to_dashboard('bad') # Dashboard bad count update
+            send_to_dashboard('bad') 
         else:
             print(W + f" [+] {F} AVAILABLE : {C}{user} ")
-            send_to_dashboard('hit') # Dashboard hit count update
+            send_to_dashboard('hit') 
             hit_msg = f"━━━━━━━━━━━━━━━\n🚀 5L HIT FOUND!\n👤 USERNAME: {user}\n💀 OWNER: Peter\n━━━━━━━━━━━━━━━"
             requests.post(f'https://api.telegram.org/bot{token_tg}/sendMessage?chat_id={id_tg}&text={hit_msg}')
     except:
@@ -92,15 +92,13 @@ def generate_and_check():
         v3 = random.choice(insta_chars)
         v4 = random.choice(insta_chars)
         v5 = random.choice(all_chars)
-        
         user = v5 + v1 + v2 + v3 + v4
         instaa(user)
 
 if __name__ == "__main__":
-    # 10 threads se speed badha di hai
-    for i in range(10):
+    # Render resource limit ke liye 5 threads best hain
+    for i in range(5):
         Thread(target=generate_and_check, daemon=True).start()
     
-    # Script ko running rakhne ke liye
     while True:
         time.sleep(10)
