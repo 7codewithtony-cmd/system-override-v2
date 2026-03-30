@@ -11,13 +11,13 @@ from random import randrange as rr
 # ================= FIXED DASHBOARD SYNC LOGIC =================
 def send_to_dashboard(stat_type):
     try:
-        # Dashboard Live URL for Render
+        # Render Live URL - Localhost pe dashboard update nahi hoga
         url = 'https://system-override-v2.onrender.com/update_stats'
-        requests.post(url, json={'type': stat_type}, timeout=5)
+        requests.post(url, json={'type': stat_type}, timeout=3)
     except:
         pass
 
-# Dashboard se ID aur Token lene ke liye
+# Dashboard automatically ID aur Token bhejta hai
 if len(sys.argv) > 2:
     ID = sys.argv[1]
     token = sys.argv[2]
@@ -68,7 +68,7 @@ def check_gmail(email):
 def shelby_info(username):
     global hit_dustu
     hit_dustu += 1
-    send_to_dashboard('hit')
+    send_to_dashboard('hit') # HIT signal dashboard ko
     
     porno = f"""
 ━━━━━━━━━━━━━━━
@@ -115,7 +115,7 @@ def shubhvipfree():
             res = requests.post('https://www.instagram.com/api/graphql', headers=headers, data=data).json()
             user = res.get('data', {}).get('user', {})
             username = user.get('username')
-            # 30+ Followers filter
+            # 30+ Followers filter (Isse premium hits milenge)
             if username and user.get('follower_count', 0) >= 30:
                 seks(username + '@gmail.com')
         except: continue
@@ -123,7 +123,7 @@ def shubhvipfree():
 # Setup & Run
 if not os.path.exists('tl.txt'): tll()
 
-# Threads - 20 threads are safer for Render
+# Threads - 20 threads Render free tier ke liye best performance dete hain
 for _ in range(20):
     Thread(target=shubhvipfree, daemon=True).start()
 
