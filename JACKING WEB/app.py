@@ -6,61 +6,45 @@ import sys
 
 app = Flask(__name__)
 
-# Global variables for stats and configuration
+# Base directory setup to find scripts inside 'JACKING WEB'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Global variables for stats
 stats = {
     "hits": 0,
     "bad": 0,
     "active_script": "None"
 }
 
-user_data = {
-    "id": "",
-    "token": ""
-}
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# Save ID and Token configuration
-@app.route('/save_config', methods=['POST'])
-def save_config():
-    global user_data
-    data = request.json
-    user_data["id"] = data.get("id")
-    user_data["token"] = data.get("token")
-    print(f"[*] Access Granted -> ID: {user_data['id']}")
-    return jsonify({"status": "success", "message": "Credentials Secured!"})
-
-# Endpoint to receive stats from running scripts
 @app.route('/update_stats', methods=['POST'])
 def update_stats():
     global stats
     data = request.json
     stat_type = data.get('type')
-    
     if stat_type == 'hit':
         stats['hits'] += 1
     elif stat_type == 'bad':
         stats['bad'] += 1
-    
     return jsonify({"status": "updated", "current_hits": stats['hits']})
 
-# Send real-time stats to frontend
 @app.route('/get_stats')
 def get_stats():
     return jsonify(stats)
 
-@app.route('/start', methods=['POST']) # Updated to match index.html fetch
+@app.route('/start', methods=['POST'])
 def start_script():
-    global user_data, stats
+    global stats
     data = request.json
     script_id = data.get('script')
-    user_data["id"] = data.get('id')
-    user_data["token"] = data.get('token')
+    user_id = data.get('id')
+    user_token = data.get('token')
 
-    if not user_data["id"] or not user_data["token"]:
-        return jsonify({"status": "error", "message": "ACCESS DENIED: ID/Token Required!"})
+    if not user_id or not user_token:
+        return jsonify({"status": "error", "message": "ID/Token Required!"})
 
     file_map = {
         "btn1": "high followers 😎 by peter (2).py",
@@ -70,25 +54,25 @@ def start_script():
         "btn5": "2k13 to 2k15 by peter.py.py"
     }
     
-    file_to_run = file_map.get(script_id)
+    file_name = file_map.get(script_id)
     
-    if file_to_run:
-        stats["active_script"] = file_to_run
+    if file_name:
+        script_path = os.path.join(BASE_DIR, file_name)
+        stats["active_script"] = file_name
         
         def run_proc():
-            # Launching script with ID and Token as arguments
-            # Use 'python3' for Linux/Render servers, 'python' for local Windows
-            python_cmd = 'python3' if os.name != 'nt' else 'python'
-            cmd = [python_cmd, file_to_run, user_data["id"], user_data["token"]]
-            subprocess.Popen(cmd)
+            python_exe = sys.executable or 'python3'
+            try:
+                # Running with full absolute path for Render
+                subprocess.Popen([python_exe, script_path, user_id, user_token])
+            except Exception as e:
+                print(f"Error: {str(e)}")
 
-        threading.Thread(target=run_proc).start()
+        threading.Thread(target=run_proc, daemon=True).start()
         return jsonify({"status": "started", "message": f"Exploit {script_id} Initiated!"})
     
-    return jsonify({"status": "error", "message": "Script not found in directory!"})
+    return jsonify({"status": "error", "message": "Script not found!"})
 
 if __name__ == '__main__':
-    # Detection for Render/Cloud deployment port
-    port = int(os.environ.get("PORT", 5000))
-    # host='0.0.0.0' is mandatory for live servers
+    port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port, debug=False)
