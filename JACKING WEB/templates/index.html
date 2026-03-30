@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM OVERRIDE v2.0 | TEAM TX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-green: #00ff41;
+            --dark-bg: #000;
+            --panel-bg: rgba(0, 10, 0, 0.9);
+            --neon-red: #ff3131;
+            --neon-blue: #00d4ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--neon-green);
+            font-family: 'Fira Code', monospace;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Matrix Canvas */
+        #matrix {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            width: 95%;
+            max-width: 500px;
+            background: var(--panel-bg);
+            border: 1px solid var(--neon-green);
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+            border-radius: 5px;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--neon-green);
+            padding-bottom: 10px;
+        }
+
+        h1 { font-size: 1.3rem; letter-spacing: 3px; text-shadow: 0 0 5px var(--neon-green); }
+
+        /* VPN ALERT BAR */
+        .vpn-notice {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px dashed var(--neon-blue);
+            color: var(--neon-blue);
+            font-size: 0.65rem;
+            padding: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            animation: flicker 2s infinite;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            border: 1px solid var(--neon-green);
+            padding: 8px;
+            text-align: center;
+            background: rgba(0, 20, 0, 0.5);
+        }
+
+        .stat-card h3 { font-size: 0.6rem; color: #aaa; margin-bottom: 5px; }
+        .stat-val { font-size: 1.6rem; font-weight: bold; }
+        #hit-val { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
+        #bad-val { color: var(--neon-red); text-shadow: 0 0 8px var(--neon-red); }
+
+        .input-group { margin-bottom: 15px; }
+
+        input {
+            width: 100%;
+            background: rgba(0, 30, 0, 0.8);
+            border: 1px solid var(--neon-green);
+            color: #fff;
+            padding: 10px;
+            margin-bottom: 8px;
+            outline: none;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 10px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            font-family: 'Fira Code', monospace;
+            transition: 0.3s;
+            font-size: 0.75rem;
+        }
+
+        button:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-green);
+        }
+
+        .status-log {
+            margin-top: 15px;
+            font-size: 0.6rem;
+            height: 50px;
+            overflow-y: auto;
+            background: #000;
+            padding: 8px;
+            border: 1px solid #111;
+            color: #0f0;
+        }
+
+        .footer-group {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px double var(--neon-green);
+            text-align: center;
+        }
+
+        .footer-group p {
+            font-size: 0.6rem;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .tg-link {
+            display: inline-block;
+            text-decoration: none;
+            color: #000;
+            background: var(--neon-green);
+            padding: 8px 15px;
+            font-weight: bold;
+            font-size: 0.7rem;
+            border-radius: 2px;
+            box-shadow: 0 0 10px var(--neon-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px var(--neon-green); }
+            50% { box-shadow: 0 0 20px var(--neon-green); }
+            100% { box-shadow: 0 0 5px var(--neon-green); }
+        }
+
+        .container::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+    <canvas id="matrix"></canvas>
+
+    <div class="container">
+        <header>
+            <h1>SYSTEM OVERRIDE v2.0</h1>
+            <div style="font-size: 0.5rem; opacity: 0.7;">OWNER: PETER | TEAM TX</div>
+        </header>
+
+        <div class="vpn-notice">
+            [!] RECOMMENDATION: USE VPN FOR BETTER EXPERIENCE
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>TOTAL HITS</h3>
+                <div id="hit-val" class="stat-val">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>FAILED</h3>
+                <div id="bad-val" class="stat-val">0</div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="id" placeholder="TELEGRAM CHAT ID">
+            <input type="text" id="token" placeholder="BOT API TOKEN">
+        </div>
+
+        <div class="btn-grid">
+            <button onclick="startScript('btn1')">Exploit: High Followers</button>
+            <button onclick="startScript('btn2')">Exploit: Team TX Core</button>
+            <button onclick="startScript('btn3')">Exploit: 2k14-15 Hybrid</button>
+            <button onclick="startScript('btn4')">Exploit: 5L Username</button>
+            <button onclick="startScript('btn5')">Exploit: Legacy Check</button>
+        </div>
+
+        <div class="status-log" id="log">
+            [SYSTEM] Waiting for instruction...
+        </div>
+
+        <div class="footer-group">
+            <p>GET MORE UPDATES ON OUR CHANNEL</p>
+            <a href="https://t.me/TEAM_TX_0" target="_blank" class="tg-link">
+                JOIN TEAM TX OFFICIAL
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()";
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#00ff41";
+            ctx.font = fontSize + "px monospace";
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 35);
+
+        function startScript(scriptId) {
+            const id = document.getElementById('id').value;
+            const token = document.getElementById('token').value;
+            const log = document.getElementById('log');
+            
+            if(!id || !token) {
+                log.innerHTML += `<br><span style="color:red">[!] CREDENTIALS REQUIRED</span>`;
+                return;
+            }
+            
+            log.innerHTML += `<br>[#] INITIALIZING ${scriptId.toUpperCase()}...`;
+            
+            fetch('/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: id, token: token, script: scriptId})
+            }).then(res => res.json()).then(data => {
+                log.innerHTML += `<br>[>] ${data.message}`;
+                log.scrollTop = log.scrollHeight;
+            });
+        }
+
+        setInterval(() => {
+            fetch('/get_stats').then(res => res.json()).then(data => {
+                document.getElementById('hit-val').innerText = data.hits;
+                document.getElementById('bad-val').innerText = data.bad;
+            });
+        }, 1000);
+    </script>
+</body>
+</html>
