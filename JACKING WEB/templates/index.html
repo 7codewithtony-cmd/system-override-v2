@@ -20,14 +20,13 @@
             background-color: var(--dark-bg);
             color: var(--neon-green);
             font-family: 'Fira Code', monospace;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
-        /* Matrix Canvas */
         #matrix {
             position: fixed;
             top: 0;
@@ -49,6 +48,7 @@
             border-radius: 5px;
             max-height: 95vh;
             overflow-y: auto;
+            margin: 10px 0; /* Mobile spacing */
         }
 
         header {
@@ -60,14 +60,8 @@
 
         h1 { font-size: 1.3rem; letter-spacing: 3px; text-shadow: 0 0 5px var(--neon-green); }
 
-        /* BLINKING ANIMATION */
-        @keyframes blinker {
-            50% { opacity: 0.3; }
-        }
-
-        .blinking {
-            animation: blinker 1s linear infinite;
-        }
+        @keyframes blinker { 50% { opacity: 0.3; } }
+        .blinking { animation: blinker 1s linear infinite; }
 
         .vpn-notice {
             background: rgba(0, 212, 255, 0.1);
@@ -77,14 +71,7 @@
             padding: 8px;
             margin-bottom: 15px;
             text-align: center;
-            letter-spacing: 1px;
             text-transform: uppercase;
-            animation: flicker 2s infinite;
-        }
-
-        @keyframes flicker {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
         }
 
         .stats-grid {
@@ -145,10 +132,24 @@
             box-shadow: 0 0 15px var(--neon-green);
         }
 
+        /* Naya STOP Button Style */
+        .stop-btn {
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+            margin-top: 10px;
+            text-shadow: 0 0 5px var(--neon-red);
+        }
+
+        .stop-btn:hover {
+            background: var(--neon-red);
+            color: #fff;
+            box-shadow: 0 0 20px var(--neon-red);
+        }
+
         .status-log {
             margin-top: 15px;
             font-size: 0.6rem;
-            height: 70px;
+            height: 80px;
             overflow-y: auto;
             background: #000;
             padding: 8px;
@@ -158,8 +159,9 @@
         }
 
         .footer-group {
-            margin-top: 15px;
+            margin-top: 20px;
             padding-top: 10px;
+            padding-bottom: 10px; /* Fix for mobile cut-off */
             border-top: 1px double var(--neon-green);
             text-align: center;
         }
@@ -167,7 +169,7 @@
         .footer-group p {
             font-size: 0.6rem;
             color: #888;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .tg-link {
@@ -175,21 +177,21 @@
             text-decoration: none;
             color: #000;
             background: var(--neon-green);
-            padding: 8px 15px;
+            padding: 10px 20px;
             font-weight: bold;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             border-radius: 2px;
             box-shadow: 0 0 10px var(--neon-green);
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0% { box-shadow: 0 0 5px var(--neon-green); }
+            0%, 100% { box-shadow: 0 0 5px var(--neon-green); }
             50% { box-shadow: 0 0 20px var(--neon-green); }
-            100% { box-shadow: 0 0 5px var(--neon-green); }
         }
 
-        .container::-webkit-scrollbar { display: none; }
+        .container::-webkit-scrollbar { width: 3px; }
+        .container::-webkit-scrollbar-thumb { background: var(--neon-green); }
     </style>
 </head>
 <body>
@@ -227,6 +229,8 @@
             <button onclick="startScript('btn3')">Exploit: 2k14-15 Hybrid</button>
             <button onclick="startScript('btn4')">Exploit: 5L Username</button>
             <button onclick="startScript('btn5')">Exploit: Legacy Check</button>
+            
+            <button id="stop-btn" class="stop-btn" onclick="stopExploits()">TERMINATE ALL EXPLOITS</button>
         </div>
 
         <div class="status-log" id="log">[SYSTEM] Waiting for instruction...</div>
@@ -272,7 +276,6 @@
                 return;
             }
             
-            // UI Feedback: Blink and Running message
             document.getElementById('hit-card').classList.add('blinking');
             document.getElementById('bad-card').classList.add('blinking');
             log.innerHTML += `\n[#] INITIALIZING ${scriptId.toUpperCase()}...`;
@@ -291,17 +294,33 @@
             });
         }
 
-        // Stats update loop
+        function stopExploits() {
+            const log = document.getElementById('log');
+            if(confirm("TERMINATE ALL ACTIVE EXPLOITS?")) {
+                fetch('/stop', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('hit-card').classList.remove('blinking');
+                    document.getElementById('bad-card').classList.remove('blinking');
+                    log.innerHTML += `\n<span style="color:red">[CRITICAL] STOP SIGNAL SENT...</span>`;
+                    log.innerHTML += `\n<span style="color:red">[!] ${data.message}</span>`;
+                    log.scrollTop = log.scrollHeight;
+                });
+            }
+        }
+
         setInterval(() => {
             fetch('/get_stats').then(res => res.json()).then(data => {
-                const hv = document.getElementById('hit-val');
-                const bv = document.getElementById('bad-val');
-                
-                // Agar data badal raha hai toh blinking barkarar rahegi
-                hv.innerText = data.hits;
-                bv.innerText = data.bad;
+                document.getElementById('hit-val').innerText = data.hits;
+                document.getElementById('bad-val').innerText = data.bad;
             });
-        }, 1000);
+        }, 1500);
+
+        // Adjust canvas on resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
     </script>
 </body>
 </html>
