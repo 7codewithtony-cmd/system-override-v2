@@ -5,9 +5,8 @@ import os
 
 app = Flask(__name__)
 
+# Base directory jahan app.py hai
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Agar files 'JACKING WEB' folder ke bahar hain toh BASE_DIR use hoga
-SCRIPTS_DIR = os.path.join(BASE_DIR, "JACKING WEB")
 
 stats = {
     "hits": 0,
@@ -47,31 +46,33 @@ def start_script():
     if not user_id or not user_token:
         return jsonify({"status": "error", "message": "ID/Token Required!"})
 
-    # Updated mapping for new combo files
+    # GitHub par jo file names hain, unse exact match kiya gaya hai
     file_map = {
         "legacy": "peter_legacy_perma.py",
         "meta": "peter_meta_bizz.py",
         "toxic": "peter_toxic_active.py",
         "deep": "peter_deep_perma.py",
         "btn1": "high followers 😍 by peter (2).py",
-        "btn3": "high followers file  by team tx.py"
+        "btn3": "high followers file  by team tx.py",
+        "btn_2k14": "2k14 to 2k15 file.py",
+        "btn_5l": "5L by Peter .py",
+        "btn_2k13": "2k13 to 2k15 by peter.py.py"
     }
     
     file_name = file_map.get(script_id)
     
     if file_name:
-        # File check: Pehle folder mein dekhega, fir bahar
-        script_path = os.path.join(SCRIPTS_DIR, file_name)
-        if not os.path.exists(script_path):
-            script_path = os.path.join(BASE_DIR, file_name)
+        # File check: Direct root folder mein check karega
+        script_path = os.path.join(BASE_DIR, file_name)
 
         if not os.path.exists(script_path):
-             return jsonify({"status": "error", "message": f"File {file_name} not found!"})
+             return jsonify({"status": "error", "message": f"File '{file_name}' nahi mili!"})
 
         stats["active_script"] = file_name
         
         def run_proc():
             try:
+                # Python command se file run hogi
                 proc = subprocess.Popen(['python3', script_path, user_id, user_token])
                 active_processes.append(proc)
                 proc.wait() 
