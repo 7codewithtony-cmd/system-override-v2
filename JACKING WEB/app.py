@@ -3,7 +3,6 @@ import subprocess
 import threading
 import os
 import sys
-import signal
 
 app = Flask(__name__)
 
@@ -11,14 +10,14 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS_DIR = os.path.join(BASE_DIR, "JACKING WEB")
 
-# Global variables for stats and process tracking
+# Global variables for stats
 stats = {
     "hits": 0,
     "bad": 0,
     "active_script": "None"
 }
 
-# Chalne waale processes ko track karne ke liye list
+# Processes ko track karne ke liye list
 active_processes = []
 
 @app.route('/')
@@ -75,11 +74,11 @@ def start_script():
         def run_proc():
             python_exe = 'python3'
             try:
-                # Process start karke list mein add karna
+                # Naya process start karke list mein save karna
                 proc = subprocess.Popen([python_exe, script_path, user_id, user_token])
                 active_processes.append(proc)
                 print(f"Started: {file_name} (PID: {proc.pid})")
-                proc.wait() # Wait for it to finish or be killed
+                proc.wait() 
             except Exception as e:
                 print(f"Error executing {file_name}: {str(e)}")
 
@@ -88,24 +87,21 @@ def start_script():
     
     return jsonify({"status": "error", "message": "Script not found!"})
 
-# --- Naya STOP Route ---
+# --- SAFE STOP ROUTE (No pkill) ---
 @app.route('/stop', methods=['POST'])
 def stop_scripts():
     global active_processes, stats
     try:
-        # Saare active processes ko kill karna
+        count = 0
         for proc in active_processes:
-            if proc.poll() is None: # Agar process abhi bhi chal raha hai
-                proc.terminate()
+            if proc.poll() is None: # Agar process chal raha hai
+                proc.terminate() # Sirf is process ko band karo
+                count += 1
         
-        active_processes = [] # List clear karna
+        active_processes = [] # List reset
         stats["active_script"] = "None"
         
-        # Emergency backup: Agar koi bach gaya ho toh system level kill
-        if os.name != 'nt': # Linux/Render environment
-            os.system("pkill -f '.py'")
-            
-        return jsonify({"status": "stopped", "message": "All background exploits stopped!"})
+        return jsonify({"status": "stopped", "message": f"Successfully stopped {count} exploits!"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
