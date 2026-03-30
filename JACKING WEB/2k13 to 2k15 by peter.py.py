@@ -22,14 +22,14 @@ init(autoreset=True)
 # ================= FIXED DASHBOARD SYNC LOGIC =================
 def send_to_dashboard(stat_type):
     try:
-        # Render Live URL for syncing stats
+        # Render Live URL for syncing stats - Localhost (127.0.0.1) Render par kaam nahi karta
         url = 'https://system-override-v2.onrender.com/update_stats'
-        requests.post(url, json={'type': stat_type}, timeout=2)
+        requests.post(url, json={'type': stat_type}, timeout=3)
     except:
         pass
 # =============================================================
 
-# Arguments check (Dashboard passes ID and Token)
+# Arguments check (Dashboard passes ID and Token automatically)
 if len(sys.argv) > 2:
     ID = sys.argv[1]
     TOKEN = sys.argv[2]
@@ -54,7 +54,7 @@ bad_email = 0
 good_ig = 0
 
 def update_stats_terminal():
-    # Terminal display update
+    # Dashboard stats update
     sysdontwrite = f"\r{C1}Hits{P1} : {hits} |{Z} Bad IG{P} : {bad_insta} | {Z}Bad Email : {bad_email} | {P}Good{Z} : {good_ig}"
     sys.stdout.write(sysdontwrite)
     sys.stdout.flush()
@@ -63,7 +63,7 @@ def check_gmail(email):
     global bad_email, hits
     try:
         email_prefix = email.split('@')[0] if '@' in email else email
-        # Path check for Render
+        # Path check for Render - 'tl.txt' root directory mein honi chahiye
         if os.path.exists(TOKEN_FILE):
             with open(TOKEN_FILE, 'r') as f:
                 token_data = f.read().splitlines()[0]
@@ -81,7 +81,7 @@ def check_gmail(email):
             
             if '"gf.uar",1' in response.text:
                 hits += 1
-                send_to_dashboard('hit') 
+                send_to_dashboard('hit') # Hits dashboard par bhejna
                 update_stats_terminal()
                 InfoAcc(email_prefix, "gmail.com")
             else:
@@ -89,7 +89,7 @@ def check_gmail(email):
                 send_to_dashboard('bad') 
                 update_stats_terminal()
         else:
-            # If tl.txt missing, still count as bad for dashboard sync
+            # If tl.txt missing, counting bad to keep dashboard updated
             bad_email += 1
             send_to_dashboard('bad')
     except:
@@ -153,7 +153,7 @@ def eizon_python():
         except:
             time.sleep(2)
 
-# Threads - Render Free Tier par 10-15 threads best hain performance ke liye
+# Threads - Render Free Tier par 15 best hain
 for _ in range(15):
     Thread(target=eizon_python, daemon=True).start()
 
