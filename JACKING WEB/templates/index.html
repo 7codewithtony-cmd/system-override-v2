@@ -60,7 +60,15 @@
 
         h1 { font-size: 1.3rem; letter-spacing: 3px; text-shadow: 0 0 5px var(--neon-green); }
 
-        /* VPN ALERT BAR */
+        /* BLINKING ANIMATION */
+        @keyframes blinker {
+            50% { opacity: 0.3; }
+        }
+
+        .blinking {
+            animation: blinker 1s linear infinite;
+        }
+
         .vpn-notice {
             background: rgba(0, 212, 255, 0.1);
             border: 1px dashed var(--neon-blue);
@@ -140,12 +148,13 @@
         .status-log {
             margin-top: 15px;
             font-size: 0.6rem;
-            height: 50px;
+            height: 70px;
             overflow-y: auto;
             background: #000;
             padding: 8px;
             border: 1px solid #111;
             color: #0f0;
+            white-space: pre-wrap;
         }
 
         .footer-group {
@@ -197,11 +206,11 @@
         </div>
 
         <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card" id="hit-card">
                 <h3>TOTAL HITS</h3>
                 <div id="hit-val" class="stat-val">0</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" id="bad-card">
                 <h3>FAILED</h3>
                 <div id="bad-val" class="stat-val">0</div>
             </div>
@@ -220,15 +229,11 @@
             <button onclick="startScript('btn5')">Exploit: Legacy Check</button>
         </div>
 
-        <div class="status-log" id="log">
-            [SYSTEM] Waiting for instruction...
-        </div>
+        <div class="status-log" id="log">[SYSTEM] Waiting for instruction...</div>
 
         <div class="footer-group">
             <p>GET MORE UPDATES ON OUR CHANNEL</p>
-            <a href="https://t.me/TEAM_TX_0" target="_blank" class="tg-link">
-                JOIN TEAM TX OFFICIAL
-            </a>
+            <a href="https://t.me/TEAM_TX_0" target="_blank" class="tg-link">JOIN TEAM TX OFFICIAL</a>
         </div>
     </div>
 
@@ -263,26 +268,38 @@
             const log = document.getElementById('log');
             
             if(!id || !token) {
-                log.innerHTML += `<br><span style="color:red">[!] CREDENTIALS REQUIRED</span>`;
+                log.innerHTML += `\n<span style="color:red">[!] CREDENTIALS REQUIRED</span>`;
                 return;
             }
             
-            log.innerHTML += `<br>[#] INITIALIZING ${scriptId.toUpperCase()}...`;
+            // UI Feedback: Blink and Running message
+            document.getElementById('hit-card').classList.add('blinking');
+            document.getElementById('bad-card').classList.add('blinking');
+            log.innerHTML += `\n[#] INITIALIZING ${scriptId.toUpperCase()}...`;
+            log.innerHTML += `\n[SYSTEM] RUNNING... (Background process active)`;
+            log.scrollTop = log.scrollHeight;
             
             fetch('/start', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({id: id, token: token, script: scriptId})
             }).then(res => res.json()).then(data => {
-                log.innerHTML += `<br>[>] ${data.message}`;
+                log.innerHTML += `\n[>] ${data.message}`;
                 log.scrollTop = log.scrollHeight;
+            }).catch(err => {
+                log.innerHTML += `\n<span style="color:red">[!] FAILED TO CONNECT TO SERVER</span>`;
             });
         }
 
+        // Stats update loop
         setInterval(() => {
             fetch('/get_stats').then(res => res.json()).then(data => {
-                document.getElementById('hit-val').innerText = data.hits;
-                document.getElementById('bad-val').innerText = data.bad;
+                const hv = document.getElementById('hit-val');
+                const bv = document.getElementById('bad-val');
+                
+                // Agar data badal raha hai toh blinking barkarar rahegi
+                hv.innerText = data.hits;
+                bv.innerText = data.bad;
             });
         }, 1000);
     </script>
